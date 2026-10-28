@@ -1,0 +1,39 @@
+# Gradle
+.gradle/
+.gradle-home/
+build/
+**/build/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# Android
+local.properties
+.android-sdk/
+.android-home/
+captures/
+.externalNativeBuild/
+.cxx/
+
+# Nix/direnv
+.direnv/
+
+# OS
+.DS_Store
+
+# Kotlin
+.kotlin/
+
+# Misc
+kls_database.db
+*.log
+*.hprof
+*.keystore
+.secret
+
+# Skills (installed via `npx skills experimental_install` from skills-lock.json)
+.opencode/skills/
+.agents/skills/
+.claude/skills/

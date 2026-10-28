@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Cortex</string>
+    <string name="widget_description">Recovery elapsed-time counter</string>
+    <string name="widget_empty">Open Cortex to start counting</string>
+</resources>
