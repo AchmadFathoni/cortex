@@ -34,7 +34,7 @@
         </receiver>
 
         <receiver
-            android:name=".widget.MidnightRefreshReceiver"
+            android:name=".widget.WidgetRefreshReceiver"
             android:exported="false" />
 
         <receiver

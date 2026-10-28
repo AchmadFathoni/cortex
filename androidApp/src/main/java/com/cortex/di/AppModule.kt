@@ -4,11 +4,13 @@ import android.content.Context
 import com.cortex.core.CounterRepo
 import com.cortex.core.CounterStorage
 import com.cortex.core.SharedCounterRepo
+import com.cortex.core.WidgetBackgroundController
 import com.cortex.core.WidgetUpdater
 import com.cortex.data.database.AppDatabase
 import com.cortex.data.database.CounterDao
 import com.cortex.data.storage.RoomCounterStorage
 import com.cortex.ui.di.UIModules
+import com.cortex.widget.AndroidWidgetBackgroundController
 import com.cortex.widget.getDatabase
 import org.koin.core.annotation.ComponentScan
 import org.koin.core.annotation.Module
@@ -31,4 +33,18 @@ class AppModule {
         storage: CounterStorage,
         widgetUpdater: WidgetUpdater,
     ): CounterRepo = SharedCounterRepo(storage, widgetUpdater)
+
+    @Single
+    fun provideAndroidWidgetBackgroundController(
+        context: Context,
+        widgetUpdater: WidgetUpdater,
+    ): AndroidWidgetBackgroundController = AndroidWidgetBackgroundController(
+        context.applicationContext,
+        widgetUpdater,
+    )
+
+    @Single(binds = [WidgetBackgroundController::class])
+    fun provideWidgetBackgroundController(
+        controller: AndroidWidgetBackgroundController,
+    ): WidgetBackgroundController = controller
 }

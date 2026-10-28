@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.cortex.core.Counter
 import com.cortex.core.CounterRepo
+import com.cortex.core.WidgetBackgroundController
 import com.cortex.core.nowMillis
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
@@ -22,6 +23,7 @@ import org.koin.core.annotation.Provided
 @KoinViewModel
 class CounterViewModel(
     @Provided private val repo: CounterRepo,
+    @Provided private val backgroundController: WidgetBackgroundController,
 ) : ViewModel() {
     private val counter = MutableStateFlow<Counter?>(null)
     private val loading = MutableStateFlow(true)
@@ -79,6 +81,9 @@ class CounterViewModel(
             is CounterAction.Reset -> viewModelScope.launch {
                 repo.reset(action.startEpochMillis)
             }
+
+            CounterAction.ChooseBackground -> backgroundController.chooseBackground()
+            CounterAction.ClearBackground -> backgroundController.clearBackground()
         }
     }
 }
@@ -93,4 +98,6 @@ sealed interface CounterAction {
     data class Start(val title: String, val startEpochMillis: Long) : CounterAction
     data class UpdateTitle(val title: String) : CounterAction
     data class Reset(val startEpochMillis: Long) : CounterAction
+    data object ChooseBackground : CounterAction
+    data object ClearBackground : CounterAction
 }

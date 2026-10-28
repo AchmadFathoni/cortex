@@ -6,7 +6,7 @@ Android-first Kotlin Multiplatform/Compose app. **One global counter**, counted
 **up** from a start timestamp. The user supplies a title and a start date/time
 down to the minute; past and current times are allowed, future times are not.
 App shows days, hours, minutes, seconds, and subseconds. The home-screen widget is the primary
-surface and shows whole days plus `HH:MM:SS`; subseconds are app-only.
+surface and shows `DD:HH:MM:SS`; subseconds are app-only.
 
 This is an addiction-recovery tool. Treat counter titles and timestamps as
 sensitive data.
@@ -98,27 +98,36 @@ Use raw `RemoteViews`, not Glance. ASR's Samsung One UI testing found Glance and
 broadcast `PendingIntent` templates unreliable; raw views with an activity
 `PendingIntent` work.
 
-- One counter means a simple layout: title, days, `Chronometer`, optional
-  progress. No `RemoteViewsService`/`ListView` unless multiple counters are
-  explicitly requested later.
+- One counter means a simple layout: title, a single-line `DD:HH:MM:SS`
+  display with `DAY HOUR MINUTE SECOND` labels above it, and no
+  `RemoteViewsService`/`ListView` unless multiple counters are requested.
+  Days and hours are separate `TextView`s ending in `:`; the `Chronometer`
+  renders `MM:SS` immediately after them. Each segment has its own label row
+  directly above it so labels align with the digits. Target a compact 4x1
+  widget; keep it resizable.
+- The widget can use a user-selected background image. Copy the picked image
+  into app-private storage, decode it to a small bitmap (<=320 px on the long
+  edge), and pass it with `setImageViewBitmap`. Do not pass a `content://` URI
+  directly to `RemoteViews`. Keep a dark scrim over the image for readability.
 - Tapping the widget opens `MainActivity` via an activity `PendingIntent`; no
   trampoline activity is needed for a read-only counter.
 - **Widgets cannot reliably animate at sub-second speed.**
   `updatePeriodMillis` has a 30-minute minimum; rapid `updateAppWidget` loops
   are throttled and battery-hostile. Do not use a foreground service to animate
   the widget.
-- `Chronometer` provides the per-second movement. Its base uses the
-  `SystemClock.elapsedRealtime()` timebase, not epoch millis:
+- `Chronometer` provides the per-second movement for `MM:SS`. Its base uses
+  the `SystemClock.elapsedRealtime()` timebase, not epoch millis:
 
   ```text
-  base = SystemClock.elapsedRealtime() - (wallClockNow - startMillis) % 86_400_000
+  base = SystemClock.elapsedRealtime() - (wallClockNow - startMillis) % 3_600_000
   ```
 
-  Render whole days as separate text, then hours/minutes/seconds from the
-  chronometer. Recompute the base on widget update, reboot, clock change,
-  timezone change, and app edit.
-- Schedule the next local-midnight refresh with an exact alarm and fall back to
-  an inexact alarm when exact-alarm permission is denied. Reschedule on boot.
+  Render whole days and hours as separate text ending in `:`, then `MM:SS`
+  from the chronometer. Recompute the base on widget update, reboot, clock
+  change, timezone change, and app edit.
+- Schedule the next hour boundary with an exact alarm and fall back to an
+  inexact alarm when exact-alarm permission is denied. The hourly refresh also
+  catches midnight and keeps the chronometer format correct. Reschedule on boot.
 - Refresh the widget when the counter is created, reset, or edited.
 - Keep widget fonts/layout static; custom bundled fonts are supported on
   minSdk 35, but avoid downloadable fonts.
@@ -153,7 +162,8 @@ screen readers.
 ## Privacy
 
 No analytics, no logging of titles or start timestamps, and no notification
-text that reveals recovery details. Consider disabling Android backup for this
+text that reveals recovery details. Widget background images stay in
+app-private storage and are never uploaded. Consider disabling Android backup for this
 app. Keep any future export/import feature explicit and local-only.
 
 ## Testing

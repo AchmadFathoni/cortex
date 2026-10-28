@@ -51,13 +51,19 @@ class ElapsedBreakdownTest {
     }
 
     @Test
-    fun chronometerBaseUsesElapsedRealtime() {
-        assertEquals(95_000L, chronometerBase(startMillis = 0L, nowMillis = 5_000L, elapsedRealtimeMillis = 100_000L))
+    fun minuteChronometerBaseUsesElapsedRealtime() {
+        assertEquals(
+            95_000L,
+            minuteChronometerBase(startMillis = 0L, nowMillis = 5_000L, elapsedRealtimeMillis = 100_000L),
+        )
     }
 
     @Test
-    fun chronometerBaseDropsWholeDays() {
-        val now = 2 * DAY_MILLIS + 7_000L
-        assertEquals(93_000L, chronometerBase(startMillis = 0L, nowMillis = now, elapsedRealtimeMillis = 100_000L))
+    fun minuteChronometerBaseDropsWholeHours() {
+        val now = 2 * HOUR_MILLIS + 5 * 60_000L + 7_000L
+        assertEquals(
+            100_000L - (5 * 60_000L + 7_000L),
+            minuteChronometerBase(startMillis = 0L, nowMillis = now, elapsedRealtimeMillis = 100_000L),
+        )
     }
 }

@@ -232,6 +232,15 @@ private fun ActiveCounter(
                 Text("Change start")
             }
         }
+        Spacer(Modifier.height(10.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            OutlinedButton(onClick = { onAction(CounterAction.ChooseBackground) }) {
+                Text("Widget background")
+            }
+            OutlinedButton(onClick = { onAction(CounterAction.ClearBackground) }) {
+                Text("Clear background")
+            }
+        }
     }
 
     if (showEdit) {

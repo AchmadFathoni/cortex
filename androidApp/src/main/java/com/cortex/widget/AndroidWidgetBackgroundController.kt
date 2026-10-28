@@ -1,0 +1,34 @@
+package com.cortex.widget
+
+import android.content.Context
+import android.net.Uri
+import com.cortex.core.WidgetBackgroundController
+import com.cortex.core.WidgetUpdater
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+
+class AndroidWidgetBackgroundController(
+    private val context: Context,
+    private val widgetUpdater: WidgetUpdater,
+) : WidgetBackgroundController {
+    var picker: (() -> Unit)? = null
+
+    override fun chooseBackground() {
+        picker?.invoke()
+    }
+
+    override fun clearBackground() {
+        CoroutineScope(Dispatchers.IO).launch {
+            WidgetBackgroundStore.clear(context)
+            widgetUpdater.notifyDataChanged()
+        }
+    }
+
+    fun saveImage(uri: Uri) {
+        CoroutineScope(Dispatchers.IO).launch {
+            WidgetBackgroundStore.save(context, uri)
+            widgetUpdater.notifyDataChanged()
+        }
+    }
+}

@@ -1,6 +1,7 @@
 package com.cortex.core
 
 const val DAY_MILLIS: Long = 86_400_000L
+const val HOUR_MILLIS: Long = 3_600_000L
 
 data class ElapsedBreakdown(
     val days: Long,
@@ -23,8 +24,8 @@ fun elapsedBreakdown(startMillis: Long, nowMillis: Long): ElapsedBreakdown {
     val elapsed = elapsedMillis(startMillis, nowMillis)
     val days = elapsed / DAY_MILLIS
     val afterDays = elapsed % DAY_MILLIS
-    val hours = (afterDays / 3_600_000L).toInt()
-    val afterHours = afterDays % 3_600_000L
+    val hours = (afterDays / HOUR_MILLIS).toInt()
+    val afterHours = afterDays % HOUR_MILLIS
     val minutes = (afterHours / 60_000L).toInt()
     val afterMinutes = afterHours % 60_000L
     val seconds = (afterMinutes / 1_000L).toInt()
@@ -32,11 +33,11 @@ fun elapsedBreakdown(startMillis: Long, nowMillis: Long): ElapsedBreakdown {
     return ElapsedBreakdown(days, hours, minutes, seconds, milliseconds)
 }
 
-fun chronometerBase(
+fun minuteChronometerBase(
     startMillis: Long,
     nowMillis: Long,
     elapsedRealtimeMillis: Long,
 ): Long {
-    val remainder = elapsedMillis(startMillis, nowMillis) % DAY_MILLIS
+    val remainder = elapsedMillis(startMillis, nowMillis) % HOUR_MILLIS
     return elapsedRealtimeMillis - remainder
 }

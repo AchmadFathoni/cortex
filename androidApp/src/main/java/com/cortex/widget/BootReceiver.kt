@@ -11,7 +11,7 @@ class BootReceiver : BroadcastReceiver() {
             Intent.ACTION_TIME_CHANGED,
             Intent.ACTION_TIMEZONE_CHANGED,
             -> {
-                MidnightRefreshReceiver.scheduleNext(context)
+                WidgetRefreshReceiver.scheduleNext(context)
                 CounterWidgetProvider.refreshAllAsync(context)
             }
         }

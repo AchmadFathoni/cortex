@@ -3,8 +3,10 @@ package com.cortex.desktop
 import com.cortex.core.CounterRepo
 import com.cortex.core.CounterStorage
 import com.cortex.core.SharedCounterRepo
+import com.cortex.core.WidgetBackgroundController
 import com.cortex.core.WidgetUpdater
 import com.cortex.ui.di.DefaultWidgetUpdater
+import com.cortex.ui.di.NoopWidgetBackgroundController
 import com.cortex.ui.di.UIModules
 import org.koin.core.annotation.ComponentScan
 import org.koin.core.annotation.Module
@@ -24,4 +26,8 @@ class DesktopAppModule {
 
     @Single(binds = [WidgetUpdater::class])
     fun provideWidgetUpdater(): WidgetUpdater = DefaultWidgetUpdater()
+
+    @Single(binds = [WidgetBackgroundController::class])
+    fun provideWidgetBackgroundController(): WidgetBackgroundController =
+        NoopWidgetBackgroundController()
 }

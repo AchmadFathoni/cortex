@@ -1,65 +1,192 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/widget_root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@drawable/widget_background"
-    android:gravity="center_vertical"
-    android:orientation="vertical"
-    android:padding="16dp">
+    android:background="@drawable/widget_background">
+
+    <ImageView
+        android:id="@+id/widget_background_image"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:contentDescription="@null"
+        android:scaleType="centerCrop"
+        android:visibility="gone" />
 
     <TextView
-        android:id="@+id/widget_title"
+        android:id="@+id/widget_scrim"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:ellipsize="end"
-        android:fontFamily="sans-serif-medium"
-        android:maxLines="1"
-        android:textColor="#CCF2F5F7"
-        android:textSize="14sp" />
+        android:layout_height="match_parent"
+        android:background="#A6000000"
+        android:visibility="gone" />
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:gravity="bottom|start"
-        android:orientation="horizontal">
+        android:layout_height="match_parent"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:padding="10dp">
 
         <TextView
-            android:id="@+id/widget_days"
-            android:layout_width="wrap_content"
+            android:id="@+id/widget_title"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:fontFamily="monospace"
-            android:textColor="#FF00E5FF"
-            android:textSize="52sp"
-            android:textStyle="bold" />
-
-        <TextView
-            android:id="@+id/widget_days_label"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
+            android:layout_marginBottom="4dp"
+            android:ellipsize="end"
             android:fontFamily="sans-serif-medium"
-            android:paddingStart="6dp"
-            android:paddingBottom="9dp"
+            android:gravity="center"
+            android:maxLines="1"
+            android:textColor="#CCF2F5F7"
+            android:textSize="13sp" />
+
+        <LinearLayout
+            android:id="@+id/widget_content"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:orientation="horizontal">
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="2"
+                        android:fontFamily="sans-serif-medium"
+                        android:gravity="center"
+                        android:letterSpacing="0.08"
+                        android:text="DAY"
+                        android:textColor="#FF8A8F98"
+                        android:textSize="10sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1" />
+                </LinearLayout>
+
+                <TextView
+                    android:id="@+id/widget_days"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="monospace"
+                    android:includeFontPadding="false"
+                    android:maxLines="1"
+                    android:textColor="#FF00E5FF"
+                    android:textSize="44sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="2"
+                        android:fontFamily="sans-serif-medium"
+                        android:gravity="center"
+                        android:letterSpacing="0.08"
+                        android:text="HOUR"
+                        android:textColor="#FF8A8F98"
+                        android:textSize="10sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1" />
+                </LinearLayout>
+
+                <TextView
+                    android:id="@+id/widget_hours"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="monospace"
+                    android:includeFontPadding="false"
+                    android:maxLines="1"
+                    android:textColor="#FFF2F5F7"
+                    android:textSize="44sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="2"
+                        android:fontFamily="sans-serif-medium"
+                        android:gravity="center"
+                        android:letterSpacing="0.08"
+                        android:text="MINUTE"
+                        android:textColor="#FF8A8F98"
+                        android:textSize="10sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1" />
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="2"
+                        android:fontFamily="sans-serif-medium"
+                        android:gravity="center"
+                        android:letterSpacing="0.08"
+                        android:text="SECOND"
+                        android:textColor="#FF8A8F98"
+                        android:textSize="10sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+
+                <Chronometer
+                    android:id="@+id/widget_chronometer"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="monospace"
+                    android:includeFontPadding="false"
+                    android:maxLines="1"
+                    android:textColor="#FFF2F5F7"
+                    android:textSize="44sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/widget_hint"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:text="@string/widget_empty"
             android:textColor="#FF8A8F98"
-            android:textSize="14sp"
-            android:textStyle="bold" />
+            android:textSize="13sp"
+            android:visibility="gone" />
     </LinearLayout>
-
-    <Chronometer
-        android:id="@+id/widget_chronometer"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:fontFamily="monospace"
-        android:textColor="#FFF2F5F7"
-        android:textSize="22sp"
-        android:textStyle="bold" />
-
-    <TextView
-        android:id="@+id/widget_hint"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="@string/widget_empty"
-        android:textColor="#FF8A8F98"
-        android:textSize="12sp"
-        android:visibility="gone" />
-</LinearLayout>
+</FrameLayout>
