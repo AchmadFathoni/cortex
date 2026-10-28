@@ -64,7 +64,9 @@ class CounterViewModel(
         when (action) {
             is CounterAction.Start -> {
                 if (action.title.isNotBlank()) {
-                    viewModelScope.launch { repo.startCounter(action.title) }
+                    viewModelScope.launch {
+                        repo.startCounter(action.title, action.startEpochMillis)
+                    }
                 }
             }
 
@@ -74,7 +76,9 @@ class CounterViewModel(
                 }
             }
 
-            CounterAction.Reset -> viewModelScope.launch { repo.reset() }
+            is CounterAction.Reset -> viewModelScope.launch {
+                repo.reset(action.startEpochMillis)
+            }
         }
     }
 }
@@ -86,7 +90,7 @@ data class CounterUiState(
 )
 
 sealed interface CounterAction {
-    data class Start(val title: String) : CounterAction
+    data class Start(val title: String, val startEpochMillis: Long) : CounterAction
     data class UpdateTitle(val title: String) : CounterAction
-    data object Reset : CounterAction
+    data class Reset(val startEpochMillis: Long) : CounterAction
 }

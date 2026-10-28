@@ -17,12 +17,18 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TimePicker
+import androidx.compose.material3.TimePickerDialog
+import androidx.compose.material3.rememberDatePickerState
+import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -48,7 +54,12 @@ import com.cortex.ui.CounterAction
 import com.cortex.ui.CounterUiState
 import com.cortex.ui.CounterViewModel
 import kotlin.time.Instant
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.LocalDateTime
+import kotlinx.datetime.LocalTime
 import kotlinx.datetime.TimeZone
+import kotlinx.datetime.atStartOfDayIn
+import kotlinx.datetime.toInstant
 import kotlinx.datetime.toLocalDateTime
 import org.koin.compose.viewmodel.koinViewModel
 
@@ -78,7 +89,9 @@ private fun CounterScreen(
             when {
                 state.isLoading -> CircularProgressIndicator(color = CortexAccent)
                 counter == null -> StartCounter(
-                    onStart = { onAction(CounterAction.Start(it)) },
+                    onStart = { title, startMillis ->
+                        onAction(CounterAction.Start(title, startMillis))
+                    },
                 )
                 else -> ActiveCounter(
                     counter = counter,
@@ -91,14 +104,15 @@ private fun CounterScreen(
 }
 
 @Composable
-private fun StartCounter(onStart: (String) -> Unit) {
+private fun StartCounter(onStart: (String, Long) -> Unit) {
     var title by rememberSaveable { mutableStateOf("My recovery") }
-    val startsAt = remember { formatTimestamp(nowMillis()) }
+    var startMillis by rememberSaveable { mutableStateOf(nowMinuteMillis()) }
+    val isFuture = startMillis > nowMillis()
 
     Column(
-        modifier = Modifier.fillMaxWidth().widthIn(max = 460.dp),
+        modifier = Modifier.fillMaxWidth().widthIn(max = 480.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(18.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         Text(
             text = "CORTEX",
@@ -115,7 +129,7 @@ private fun StartCounter(onStart: (String) -> Unit) {
             textAlign = TextAlign.Center,
         )
         Text(
-            text = "Give this chapter a name. Your count starts from now.",
+            text = "Give this chapter a name. Start from now or backdate it to the exact minute.",
             color = CortexMuted,
             fontSize = 15.sp,
             textAlign = TextAlign.Center,
@@ -128,13 +142,29 @@ private fun StartCounter(onStart: (String) -> Unit) {
             modifier = Modifier.fillMaxWidth(),
         )
         Text(
-            text = "Starts $startsAt",
+            text = "Start date and time",
             color = CortexMuted,
             fontSize = 13.sp,
         )
+        StartTimeControls(
+            startMillis = startMillis,
+            onStartMillisChange = { startMillis = it },
+        )
+        Text(
+            text = "Started ${formatTimestamp(startMillis)}",
+            color = CortexMuted,
+            fontSize = 13.sp,
+        )
+        if (isFuture) {
+            Text(
+                text = "Start time cannot be in the future.",
+                color = CortexDanger,
+                fontSize = 13.sp,
+            )
+        }
         Button(
-            onClick = { onStart(title.trim()) },
-            enabled = title.isNotBlank(),
+            onClick = { onStart(title.trim(), startMillis) },
+            enabled = title.isNotBlank() && !isFuture,
             modifier = Modifier.fillMaxWidth(),
         ) {
             Text("Start counting", fontWeight = FontWeight.Bold)
@@ -158,7 +188,7 @@ private fun ActiveCounter(
         formatTimestamp(counter.startEpochMillis)
     }
     var showEdit by rememberSaveable { mutableStateOf(false) }
-    var showReset by rememberSaveable { mutableStateOf(false) }
+    var showChangeStart by rememberSaveable { mutableStateOf(false) }
 
     Column(
         modifier = Modifier.fillMaxWidth().widthIn(max = 520.dp),
@@ -196,10 +226,10 @@ private fun ActiveCounter(
                 Text("Edit title")
             }
             OutlinedButton(
-                onClick = { showReset = true },
+                onClick = { showChangeStart = true },
                 colors = ButtonDefaults.outlinedButtonColors(contentColor = CortexDanger),
             ) {
-                Text("Reset start")
+                Text("Change start")
             }
         }
     }
@@ -215,14 +245,105 @@ private fun ActiveCounter(
         )
     }
 
-    if (showReset) {
-        ResetDialog(
-            onDismiss = { showReset = false },
-            onConfirm = {
-                onAction(CounterAction.Reset)
-                showReset = false
+    if (showChangeStart) {
+        ChangeStartDialog(
+            currentStartMillis = counter.startEpochMillis,
+            onDismiss = { showChangeStart = false },
+            onSave = {
+                onAction(CounterAction.Reset(it))
+                showChangeStart = false
             },
         )
+    }
+}
+
+@Composable
+private fun StartTimeControls(
+    startMillis: Long,
+    onStartMillisChange: (Long) -> Unit,
+) {
+    val dateTime = Instant.fromEpochMilliseconds(startMillis)
+        .toLocalDateTime(TimeZone.currentSystemDefault())
+    var showDatePicker by rememberSaveable { mutableStateOf(false) }
+    var showTimePicker by rememberSaveable { mutableStateOf(false) }
+
+    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        OutlinedButton(onClick = { showDatePicker = true }) {
+            Text(formatDate(dateTime.date))
+        }
+        OutlinedButton(onClick = { showTimePicker = true }) {
+            Text(formatTime(dateTime.time))
+        }
+    }
+
+    if (showDatePicker) {
+        val datePickerState = rememberDatePickerState(
+            initialSelectedDateMillis = dateTime.date
+                .atStartOfDayIn(TimeZone.UTC)
+                .toEpochMilliseconds(),
+        )
+        DatePickerDialog(
+            onDismissRequest = { showDatePicker = false },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        datePickerState.selectedDateMillis?.let { millis ->
+                            val date = Instant.fromEpochMilliseconds(millis)
+                                .toLocalDateTime(TimeZone.UTC)
+                                .date
+                            onStartMillisChange(
+                                combineDateTime(date, dateTime.time.hour, dateTime.time.minute),
+                            )
+                        }
+                        showDatePicker = false
+                    },
+                ) {
+                    Text("OK")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDatePicker = false }) {
+                    Text("Cancel")
+                }
+            },
+        ) {
+            DatePicker(state = datePickerState)
+        }
+    }
+
+    if (showTimePicker) {
+        val timePickerState = rememberTimePickerState(
+            initialHour = dateTime.time.hour,
+            initialMinute = dateTime.time.minute,
+            is24Hour = true,
+        )
+        TimePickerDialog(
+            onDismissRequest = { showTimePicker = false },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        onStartMillisChange(
+                            combineDateTime(
+                                dateTime.date,
+                                timePickerState.hour,
+                                timePickerState.minute,
+                            ),
+                        )
+                        showTimePicker = false
+                    },
+                ) {
+                    Text("OK")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showTimePicker = false }) {
+                    Text("Cancel")
+                }
+            },
+            title = { Text("Set start time") },
+        ) {
+            TimePicker(state = timePickerState)
+        }
     }
 }
 
@@ -335,19 +456,48 @@ private fun EditTitleDialog(
 }
 
 @Composable
-private fun ResetDialog(
+private fun ChangeStartDialog(
+    currentStartMillis: Long,
     onDismiss: () -> Unit,
-    onConfirm: () -> Unit,
+    onSave: (Long) -> Unit,
 ) {
+    var startMillis by rememberSaveable(currentStartMillis) {
+        mutableStateOf(currentStartMillis)
+    }
+    val isFuture = startMillis > nowMillis()
+
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Reset start time?") },
+        title = { Text("Change start time") },
         text = {
-            Text("The counter will restart from now. Your current elapsed time will be lost.")
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                StartTimeControls(
+                    startMillis = startMillis,
+                    onStartMillisChange = { startMillis = it },
+                )
+                TextButton(onClick = { startMillis = nowMinuteMillis() }) {
+                    Text("Use now")
+                }
+                Text(
+                    text = "Started ${formatTimestamp(startMillis)}",
+                    color = CortexMuted,
+                    fontSize = 13.sp,
+                )
+                if (isFuture) {
+                    Text(
+                        text = "Start time cannot be in the future.",
+                        color = CortexDanger,
+                        fontSize = 13.sp,
+                    )
+                }
+            }
         },
         confirmButton = {
-            TextButton(onClick = onConfirm) {
-                Text("Reset", color = CortexDanger)
+            TextButton(
+                onClick = { onSave(startMillis) },
+                enabled = !isFuture,
+            ) {
+                Text("Save")
             }
         },
         dismissButton = {
@@ -358,13 +508,25 @@ private fun ResetDialog(
     )
 }
 
+private fun nowMinuteMillis(): Long = (nowMillis() / 60_000L) * 60_000L
+
+private fun combineDateTime(date: LocalDate, hour: Int, minute: Int): Long =
+    LocalDateTime(date.year, date.month, date.day, hour, minute)
+        .toInstant(TimeZone.currentSystemDefault())
+        .toEpochMilliseconds()
+
 private fun formatTimestamp(epochMillis: Long): String {
     val dateTime = Instant.fromEpochMilliseconds(epochMillis)
         .toLocalDateTime(TimeZone.currentSystemDefault())
-    val date = dateTime.date
-    val time = dateTime.time
-    val month = (date.month.ordinal + 1).pad2()
-    return "${date.year}-$month-${date.day.pad2()} ${time.hour.pad2()}:${time.minute.pad2()}"
+    return "${formatDate(dateTime.date)} ${formatTime(dateTime.time)}"
 }
+
+private fun formatDate(date: LocalDate): String {
+    val month = (date.month.ordinal + 1).pad2()
+    return "${date.year}-$month-${date.day.pad2()}"
+}
+
+private fun formatTime(time: LocalTime): String =
+    "${time.hour.pad2()}:${time.minute.pad2()}"
 
 private fun Int.pad2(): String = toString().padStart(2, '0')

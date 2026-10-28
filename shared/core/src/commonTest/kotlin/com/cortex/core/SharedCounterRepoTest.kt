@@ -28,30 +28,48 @@ class SharedCounterRepoTest {
     }
 
     @Test
-    fun startCapturesCurrentClockAndRefreshesWidget() = runTest {
+    fun startUsesProvidedPastStartAndRefreshesWidget() = runTest {
         val storage = FakeStorage()
         val widget = FakeWidgetUpdater()
         val repo = SharedCounterRepo(storage, widget, clock = { 12_345L })
 
-        repo.startCounter("  My recovery  ")
+        repo.startCounter("  My recovery  ", 5_000L)
 
-        assertEquals(Counter("My recovery", 12_345L), storage.state.value)
+        assertEquals(Counter("My recovery", 5_000L), storage.state.value)
         assertEquals(1, widget.calls)
     }
 
     @Test
-    fun resetCapturesNewClockAndKeepsTitle() = runTest {
+    fun startClampsFutureStartToNow() = runTest {
+        val storage = FakeStorage()
+        val repo = SharedCounterRepo(storage, FakeWidgetUpdater(), clock = { 12_345L })
+
+        repo.startCounter("Recovery", 99_000L)
+
+        assertEquals(Counter("Recovery", 12_345L), storage.state.value)
+    }
+
+    @Test
+    fun resetUsesProvidedStartAndKeepsTitle() = runTest {
         val storage = FakeStorage(Counter("Sober", 1_000L))
         val widget = FakeWidgetUpdater()
-        var now = 50_000L
-        val repo = SharedCounterRepo(storage, widget, clock = { now })
+        val repo = SharedCounterRepo(storage, widget, clock = { 50_000L })
 
-        repo.reset()
+        repo.reset(5_000L)
+        assertEquals(Counter("Sober", 5_000L), storage.state.value)
+
+        repo.reset(45_000L)
+        assertEquals(Counter("Sober", 45_000L), storage.state.value)
+    }
+
+    @Test
+    fun resetClampsFutureStartToNow() = runTest {
+        val storage = FakeStorage(Counter("Sober", 1_000L))
+        val repo = SharedCounterRepo(storage, FakeWidgetUpdater(), clock = { 50_000L })
+
+        repo.reset(90_000L)
+
         assertEquals(Counter("Sober", 50_000L), storage.state.value)
-
-        now = 90_000L
-        repo.reset()
-        assertEquals(Counter("Sober", 90_000L), storage.state.value)
     }
 
     @Test

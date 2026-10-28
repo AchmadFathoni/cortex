@@ -3,9 +3,9 @@
 ## Cortex — recovery elapsed-time counter
 
 Android-first Kotlin Multiplatform/Compose app. **One global counter**, counted
-**up** from a start timestamp. The user supplies a title only; the start time is
-the current date/time when the counter is created. App shows days, hours,
-minutes, seconds, and subseconds. The home-screen widget is the primary
+**up** from a start timestamp. The user supplies a title and a start date/time
+down to the minute; past and current times are allowed, future times are not.
+App shows days, hours, minutes, seconds, and subseconds. The home-screen widget is the primary
 surface and shows whole days plus `HH:MM:SS`; subseconds are app-only.
 
 This is an addiction-recovery tool. Treat counter titles and timestamps as
@@ -39,6 +39,7 @@ uses the shared parent SDK/Gradle dirs, and patches AAPT2.
 ```bash
 ./scripts/gradlew assembleDebug
 ./scripts/gradlew installDebug
+./scripts/gradlew :desktopApp:run
 ./scripts/gradlew test :shared:core:jvmTest :shared:ui:jvmTest
 ./scripts/gradlew :shared:core:jvmTest --tests "com.cortex.core.ElapsedBreakdownTest"
 ```
@@ -47,8 +48,8 @@ uses the shared parent SDK/Gradle dirs, and patches AAPT2.
 - Never use `nix develop --command` or `nix develop --print-env` in OpenCode;
   they produce no usable output here.
 - AAPT2 override must be a project property (`-P`), never `-D`.
-- Do not build or run `:desktopApp` unless the user explicitly asks. Android
-  is the target; desktop is only a preview module.
+- `:desktopApp` is the fast iteration surface. It must stay buildable, but
+  Android remains the primary target.
 - If the transform cache is corrupt, delete only
   `../.gradle-home/caches/*/transforms/`; do not wipe the whole cache.
 
@@ -75,7 +76,7 @@ before publishing anywhere public.
 :shared/core  — counter model, elapsed-time math, storage interfaces
 :shared/ui    — Compose screen, ViewModel, dark digital theme
 :androidApp   — Room, DI, widget, Android entry point
-:desktopApp   — JSON/in-memory stub, preview only (not built by default)
+:desktopApp   — JSON/in-memory stub, desktop preview surface
 ```
 
 Persistence is a single row (`id = 1`) holding title + `startEpochMillis`.
@@ -124,13 +125,14 @@ broadcast `PendingIntent` templates unreliable; raw views with an activity
 
 ## Time math
 
-- The only date input is **today/now**. Do not add a future-date picker or
-  countdown mode unless explicitly asked.
-- Capture `startEpochMillis = Clock.System.now().toEpochMilliseconds()` once,
-  on explicit create/reset, and persist it immediately. Never recapture it on
-  recomposition, navigation, or app restart.
-- If reset is implemented, it also captures the current clock. Never allow a
-  future start time.
+- The start date/time picker is limited to **past or current** times, with
+  minute precision. Do not add future dates or countdown mode unless explicitly
+  asked.
+- Capture the chosen `startEpochMillis` once on explicit create/reset and
+  persist it immediately. Never recapture it on recomposition, navigation, or
+  app restart.
+- Clamp any future start to the current clock defensively, and show validation
+  in the UI.
 - Elapsed = `nowMillis - startEpochMillis`, clamped to zero for clock rollback.
 - Compute the breakdown in a pure function taking `startMillis` and
   `nowMillis`. Use duration-based 24-hour days; timezone/DST changes must not

@@ -11,10 +11,13 @@ class SharedCounterRepo(
 
     override suspend fun getCounter(): Counter? = storage.getCounter()
 
-    override suspend fun startCounter(title: String): Counter {
+    override suspend fun startCounter(title: String, startEpochMillis: Long): Counter {
         val trimmed = title.trim()
         require(trimmed.isNotEmpty()) { "Counter title must not be blank" }
-        val counter = Counter(title = trimmed, startEpochMillis = clock())
+        val counter = Counter(
+            title = trimmed,
+            startEpochMillis = startEpochMillis.coerceAtMost(clock()),
+        )
         storage.saveCounter(counter)
         widgetUpdater.notifyDataChanged()
         return counter
@@ -28,9 +31,9 @@ class SharedCounterRepo(
         widgetUpdater.notifyDataChanged()
     }
 
-    override suspend fun reset() {
+    override suspend fun reset(startEpochMillis: Long) {
         val current = storage.getCounter() ?: return
-        storage.saveCounter(current.copy(startEpochMillis = clock()))
+        storage.saveCounter(current.copy(startEpochMillis = startEpochMillis.coerceAtMost(clock())))
         widgetUpdater.notifyDataChanged()
     }
 }
