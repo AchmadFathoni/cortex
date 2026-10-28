@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.cortex.core.Counter
 import com.cortex.core.CounterRepo
 import com.cortex.core.WidgetBackgroundController
+import com.cortex.core.WidgetBackgroundMode
 import com.cortex.core.nowMillis
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
@@ -41,11 +42,17 @@ class CounterViewModel(
         }
     }
 
-    val state = combine(counter, loading, clockFlow) { current, isLoading, now ->
+    val state = combine(
+        counter,
+        loading,
+        clockFlow,
+        backgroundController.mode,
+    ) { current, isLoading, now, backgroundMode ->
         CounterUiState(
             counter = current,
             nowMillis = now,
             isLoading = isLoading,
+            backgroundMode = backgroundMode,
         )
     }.stateIn(
         scope = viewModelScope,
@@ -84,6 +91,7 @@ class CounterViewModel(
 
             CounterAction.ChooseBackground -> backgroundController.chooseBackground()
             CounterAction.ClearBackground -> backgroundController.clearBackground()
+            is CounterAction.SetBackgroundMode -> backgroundController.setBackgroundMode(action.mode)
         }
     }
 }
@@ -92,6 +100,7 @@ data class CounterUiState(
     val counter: Counter? = null,
     val nowMillis: Long = 0,
     val isLoading: Boolean = true,
+    val backgroundMode: WidgetBackgroundMode = WidgetBackgroundMode.FIT_CENTER,
 )
 
 sealed interface CounterAction {
@@ -100,4 +109,5 @@ sealed interface CounterAction {
     data class Reset(val startEpochMillis: Long) : CounterAction
     data object ChooseBackground : CounterAction
     data object ClearBackground : CounterAction
+    data class SetBackgroundMode(val mode: WidgetBackgroundMode) : CounterAction
 }

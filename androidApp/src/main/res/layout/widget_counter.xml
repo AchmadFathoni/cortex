@@ -5,8 +5,30 @@
     android:layout_height="match_parent"
     android:background="@drawable/widget_background">
 
+    <TextView
+        android:id="@+id/widget_top_fill"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_gravity="top"
+        android:visibility="gone" />
+
+    <TextView
+        android:id="@+id/widget_bottom_fill"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_gravity="bottom"
+        android:visibility="gone" />
+
     <ImageView
-        android:id="@+id/widget_background_image"
+        android:id="@+id/widget_background_image_fit"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:contentDescription="@null"
+        android:scaleType="fitCenter"
+        android:visibility="gone" />
+
+    <ImageView
+        android:id="@+id/widget_background_image_crop"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:contentDescription="@null"
@@ -19,6 +41,13 @@
         android:layout_height="match_parent"
         android:background="#A6000000"
         android:visibility="gone" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@drawable/widget_border"
+        android:clickable="false"
+        android:focusable="false" />
 
     <LinearLayout
         android:layout_width="match_parent"

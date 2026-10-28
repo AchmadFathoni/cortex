@@ -6,12 +6,13 @@ import android.appwidget.AppWidgetProvider
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
-import android.graphics.Bitmap
 import android.os.SystemClock
+import android.util.TypedValue
 import android.view.View
 import android.widget.RemoteViews
 import com.cortex.R
 import com.cortex.app.MainActivity
+import com.cortex.core.WidgetBackgroundMode
 import com.cortex.core.elapsedBreakdown
 import com.cortex.core.minuteChronometerBase
 import com.cortex.core.nowMillis
@@ -63,12 +64,28 @@ class CounterWidgetProvider : AppWidgetProvider() {
         ) {
             val counter = getDatabase(context).counterDao().getCounter()
             val background = WidgetBackgroundStore.load(context)
+            val mode = WidgetBackgroundSettings.mode(context)
             val now = nowMillis()
             val elapsedRealtime = SystemClock.elapsedRealtime()
             for (appWidgetId in appWidgetIds) {
+                val options = manager.getAppWidgetOptions(appWidgetId)
+                val widgetHeight = options
+                    .getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT)
+                    .takeIf { it > 0 }
+                    ?: options.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT)
+                val fillHeightDp = if (widgetHeight > 0) widgetHeight / 2f + 12f else 80f
                 manager.updateAppWidget(
                     appWidgetId,
-                    buildViews(context, appWidgetId, counter, background, now, elapsedRealtime),
+                    buildViews(
+                        context = context,
+                        appWidgetId = appWidgetId,
+                        counter = counter,
+                        background = background,
+                        backgroundMode = mode,
+                        fillHeightDp = fillHeightDp,
+                        nowMillis = now,
+                        elapsedRealtimeMillis = elapsedRealtime,
+                    ),
                 )
             }
         }
@@ -77,7 +94,9 @@ class CounterWidgetProvider : AppWidgetProvider() {
             context: Context,
             appWidgetId: Int,
             counter: CounterEntity?,
-            background: Bitmap?,
+            background: WidgetBackground?,
+            backgroundMode: WidgetBackgroundMode,
+            fillHeightDp: Float,
             nowMillis: Long,
             elapsedRealtimeMillis: Long,
         ): RemoteViews {
@@ -93,11 +112,52 @@ class CounterWidgetProvider : AppWidgetProvider() {
             views.setOnClickPendingIntent(R.id.widget_root, openPendingIntent)
 
             if (background != null) {
-                views.setImageViewBitmap(R.id.widget_background_image, background)
-                views.setViewVisibility(R.id.widget_background_image, View.VISIBLE)
+                val fit = backgroundMode == WidgetBackgroundMode.FIT_CENTER
+                if (fit) {
+                    views.setImageViewBitmap(
+                        R.id.widget_background_image_fit,
+                        background.bitmap,
+                    )
+                    views.setInt(
+                        R.id.widget_top_fill,
+                        "setBackgroundColor",
+                        background.topColor,
+                    )
+                    views.setInt(
+                        R.id.widget_bottom_fill,
+                        "setBackgroundColor",
+                        background.bottomColor,
+                    )
+                    views.setViewLayoutHeight(
+                        R.id.widget_top_fill,
+                        fillHeightDp,
+                        TypedValue.COMPLEX_UNIT_DIP,
+                    )
+                    views.setViewLayoutHeight(
+                        R.id.widget_bottom_fill,
+                        fillHeightDp,
+                        TypedValue.COMPLEX_UNIT_DIP,
+                    )
+                    views.setViewVisibility(R.id.widget_top_fill, View.VISIBLE)
+                    views.setViewVisibility(R.id.widget_bottom_fill, View.VISIBLE)
+                    views.setViewVisibility(R.id.widget_background_image_fit, View.VISIBLE)
+                    views.setViewVisibility(R.id.widget_background_image_crop, View.GONE)
+                } else {
+                    views.setImageViewBitmap(
+                        R.id.widget_background_image_crop,
+                        background.bitmap,
+                    )
+                    views.setViewVisibility(R.id.widget_top_fill, View.GONE)
+                    views.setViewVisibility(R.id.widget_bottom_fill, View.GONE)
+                    views.setViewVisibility(R.id.widget_background_image_fit, View.GONE)
+                    views.setViewVisibility(R.id.widget_background_image_crop, View.VISIBLE)
+                }
                 views.setViewVisibility(R.id.widget_scrim, View.VISIBLE)
             } else {
-                views.setViewVisibility(R.id.widget_background_image, View.GONE)
+                views.setViewVisibility(R.id.widget_top_fill, View.GONE)
+                views.setViewVisibility(R.id.widget_bottom_fill, View.GONE)
+                views.setViewVisibility(R.id.widget_background_image_fit, View.GONE)
+                views.setViewVisibility(R.id.widget_background_image_crop, View.GONE)
                 views.setViewVisibility(R.id.widget_scrim, View.GONE)
             }
 

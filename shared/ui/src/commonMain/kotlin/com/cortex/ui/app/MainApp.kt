@@ -1,5 +1,6 @@
 package com.cortex.ui.app
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -48,6 +49,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.cortex.core.Counter
 import com.cortex.core.ElapsedBreakdown
+import com.cortex.core.WidgetBackgroundMode
 import com.cortex.core.elapsedBreakdown
 import com.cortex.core.nowMillis
 import com.cortex.ui.CounterAction
@@ -96,6 +98,7 @@ private fun CounterScreen(
                 else -> ActiveCounter(
                     counter = counter,
                     nowMillis = state.nowMillis,
+                    backgroundMode = state.backgroundMode,
                     onAction = onAction,
                 )
             }
@@ -181,6 +184,7 @@ private fun StartCounter(onStart: (String, Long) -> Unit) {
 private fun ActiveCounter(
     counter: Counter,
     nowMillis: Long,
+    backgroundMode: WidgetBackgroundMode,
     onAction: (CounterAction) -> Unit,
 ) {
     val breakdown = elapsedBreakdown(counter.startEpochMillis, nowMillis)
@@ -189,6 +193,7 @@ private fun ActiveCounter(
     }
     var showEdit by rememberSaveable { mutableStateOf(false) }
     var showChangeStart by rememberSaveable { mutableStateOf(false) }
+    var showWidgetSettings by rememberSaveable { mutableStateOf(false) }
 
     Column(
         modifier = Modifier.fillMaxWidth().widthIn(max = 520.dp),
@@ -221,24 +226,15 @@ private fun ActiveCounter(
         Spacer(Modifier.height(22.dp))
         SecondProgress(breakdown)
         Spacer(Modifier.height(36.dp))
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            OutlinedButton(onClick = { showEdit = true }) {
+        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+            TextButton(onClick = { showEdit = true }) {
                 Text("Edit title")
             }
-            OutlinedButton(
-                onClick = { showChangeStart = true },
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = CortexDanger),
-            ) {
+            TextButton(onClick = { showChangeStart = true }) {
                 Text("Change start")
             }
-        }
-        Spacer(Modifier.height(10.dp))
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            OutlinedButton(onClick = { onAction(CounterAction.ChooseBackground) }) {
-                Text("Widget background")
-            }
-            OutlinedButton(onClick = { onAction(CounterAction.ClearBackground) }) {
-                Text("Clear background")
+            TextButton(onClick = { showWidgetSettings = true }) {
+                Text("Widget")
             }
         }
     }
@@ -262,6 +258,22 @@ private fun ActiveCounter(
                 onAction(CounterAction.Reset(it))
                 showChangeStart = false
             },
+        )
+    }
+
+    if (showWidgetSettings) {
+        WidgetBackgroundDialog(
+            backgroundMode = backgroundMode,
+            onDismiss = { showWidgetSettings = false },
+            onChooseImage = {
+                showWidgetSettings = false
+                onAction(CounterAction.ChooseBackground)
+            },
+            onClear = {
+                showWidgetSettings = false
+                onAction(CounterAction.ClearBackground)
+            },
+            onModeChange = { onAction(CounterAction.SetBackgroundMode(it)) },
         )
     }
 }
@@ -426,6 +438,84 @@ private fun SecondProgress(breakdown: ElapsedBreakdown) {
                 .background(CortexAccent),
         )
     }
+}
+
+@Composable
+private fun BackgroundModeButton(
+    label: String,
+    selected: Boolean,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit,
+) {
+    OutlinedButton(
+        onClick = onClick,
+        modifier = modifier,
+        border = BorderStroke(
+            1.dp,
+            if (selected) CortexAccent else MaterialTheme.colorScheme.outline,
+        ),
+        colors = ButtonDefaults.outlinedButtonColors(
+            contentColor = if (selected) CortexAccent else CortexMuted,
+        ),
+    ) {
+        Text(label)
+    }
+}
+
+@Composable
+private fun WidgetBackgroundDialog(
+    backgroundMode: WidgetBackgroundMode,
+    onDismiss: () -> Unit,
+    onChooseImage: () -> Unit,
+    onClear: () -> Unit,
+    onModeChange: (WidgetBackgroundMode) -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Widget background") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedButton(
+                        onClick = onChooseImage,
+                        modifier = Modifier.weight(1f),
+                    ) {
+                        Text("Pick image")
+                    }
+                    OutlinedButton(
+                        onClick = onClear,
+                        modifier = Modifier.weight(1f),
+                    ) {
+                        Text("Clear")
+                    }
+                }
+                Text(
+                    text = "Background mode",
+                    color = CortexMuted,
+                    fontSize = 12.sp,
+                )
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    BackgroundModeButton(
+                        label = "Fit edges",
+                        selected = backgroundMode == WidgetBackgroundMode.FIT_CENTER,
+                        modifier = Modifier.weight(1f),
+                        onClick = { onModeChange(WidgetBackgroundMode.FIT_CENTER) },
+                    )
+                    BackgroundModeButton(
+                        label = "Center crop",
+                        selected = backgroundMode == WidgetBackgroundMode.CENTER_CROP,
+                        modifier = Modifier.weight(1f),
+                        onClick = { onModeChange(WidgetBackgroundMode.CENTER_CROP) },
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Done")
+            }
+        },
+    )
 }
 
 @Composable

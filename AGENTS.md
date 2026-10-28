@@ -108,7 +108,10 @@ broadcast `PendingIntent` templates unreliable; raw views with an activity
 - The widget can use a user-selected background image. Copy the picked image
   into app-private storage, decode it to a small bitmap (<=320 px on the long
   edge), and pass it with `setImageViewBitmap`. Do not pass a `content://` URI
-  directly to `RemoteViews`. Keep a dark scrim over the image for readability.
+  directly to `RemoteViews`. Two modes are supported: `fitCenter` with the top
+  and bottom letterbox gaps filled by the dominant color sampled from that edge,
+  and `centerCrop` which hides those fills. Persist the mode in
+  `WidgetBackgroundSettings`; keep a dark scrim over the image for readability.
 - Tapping the widget opens `MainActivity` via an activity `PendingIntent`; no
   trampoline activity is needed for a read-only counter.
 - **Widgets cannot reliably animate at sub-second speed.**

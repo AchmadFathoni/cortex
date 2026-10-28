@@ -14,7 +14,7 @@ The widget shows `DD:HH:MM:SS` with `DAY HOUR MINUTE SECOND` labels above it.
 - Counts up using duration-based 24-hour days, independent of timezone/DST
 - Dark digital UI with monospace, fixed-width digits
 - Compact 4x1 home-screen widget with per-second movement
-- Optional custom widget background image, stored locally with a dark scrim
+- Optional custom widget background image with **Fit edges** or **Center crop** mode, stored locally
 - No analytics, no cloud sync, no title/timestamp logging
 
 ## Requirements
@@ -48,8 +48,11 @@ The widget shows `DD:HH:MM:SS` with `DAY HOUR MINUTE SECOND` labels above it.
   day/hour text and reset the chronometer base. It also refreshes on boot,
   clock/timezone changes, and app edits.
 - Pick a background with **Widget background** in the app. **Clear background**
-  removes it. Images are copied into app-private storage, decoded to a small
-  bitmap, and rendered under a dark scrim. They are never uploaded.
+  removes it. Images are copied into app-private storage and decoded to a small
+  bitmap. **Fit edges** keeps the full width visible and fills the top/bottom
+  gaps with the dominant color of each image edge; **Center crop** fills the
+  widget by cropping. A dark scrim keeps the text readable. Images are never
+  uploaded.
 
 ## Architecture
 
