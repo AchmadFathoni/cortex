@@ -48,7 +48,8 @@ class WidgetRefreshReceiver : BroadcastReceiver() {
                     pending,
                 )
             } catch (_: SecurityException) {
-                alarmManager.set(AlarmManager.RTC_WAKEUP, nextHour, pending)
+                // set() never fires in Doze; allow-while-idle keeps the hourly rollover close.
+                alarmManager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, nextHour, pending)
             }
         }
     }
