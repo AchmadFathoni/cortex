@@ -129,8 +129,12 @@ broadcast `PendingIntent` templates unreliable; raw views with an activity
   from the chronometer. Recompute the base on widget update, reboot, clock
   change, timezone change, and app edit.
 - Schedule the next hour boundary with an exact alarm and fall back to an
-  inexact alarm when exact-alarm permission is denied. The hourly refresh also
-  catches midnight and keeps the chronometer format correct. Reschedule on boot.
+  inexact **allow-while-idle** alarm when exact-alarm permission is denied.
+  That fallback is the normal path: `SCHEDULE_EXACT_ALARM` is denied by default
+  for targetSdk 33+, so a plain `set()` alarm is never delivered in Doze and the
+  widget sits on yesterday's day/hour digits all night. Allow-while-idle is at
+  worst ~40 min late. The hourly refresh also catches midnight and keeps the
+  chronometer format correct. Reschedule on boot.
 - Refresh the widget when the counter is created, reset, or edited.
 - Keep widget fonts/layout static; custom bundled fonts are supported on
   minSdk 35, but avoid downloadable fonts.
