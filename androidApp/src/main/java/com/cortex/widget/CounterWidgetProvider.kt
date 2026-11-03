@@ -6,7 +6,6 @@ import android.appwidget.AppWidgetProvider
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
-import android.os.SystemClock
 import android.util.TypedValue
 import android.view.View
 import android.widget.RemoteViews
@@ -14,7 +13,7 @@ import com.cortex.R
 import com.cortex.app.MainActivity
 import com.cortex.core.WidgetBackgroundMode
 import com.cortex.core.elapsedBreakdown
-import com.cortex.core.minuteChronometerBase
+import com.cortex.core.elapsedClockZoneId
 import com.cortex.core.nowMillis
 import com.cortex.data.database.CounterEntity
 import kotlinx.coroutines.CoroutineScope
@@ -27,7 +26,6 @@ class CounterWidgetProvider : AppWidgetProvider() {
         appWidgetManager: AppWidgetManager,
         appWidgetIds: IntArray,
     ) {
-        WidgetRefreshReceiver.scheduleNext(context)
         val pendingResult = goAsync()
         CoroutineScope(Dispatchers.IO).launch {
             try {
@@ -66,7 +64,6 @@ class CounterWidgetProvider : AppWidgetProvider() {
             val background = WidgetBackgroundStore.load(context)
             val mode = WidgetBackgroundSettings.mode(context)
             val now = nowMillis()
-            val elapsedRealtime = SystemClock.elapsedRealtime()
             for (appWidgetId in appWidgetIds) {
                 val options = manager.getAppWidgetOptions(appWidgetId)
                 val widgetHeight = options
@@ -84,9 +81,11 @@ class CounterWidgetProvider : AppWidgetProvider() {
                         backgroundMode = mode,
                         fillHeightDp = fillHeightDp,
                         nowMillis = now,
-                        elapsedRealtimeMillis = elapsedRealtime,
                     ),
                 )
+            }
+            if (counter != null) {
+                WidgetRefreshReceiver.scheduleNext(context, counter.startEpochMillis)
             }
         }
 
@@ -98,7 +97,6 @@ class CounterWidgetProvider : AppWidgetProvider() {
             backgroundMode: WidgetBackgroundMode,
             fillHeightDp: Float,
             nowMillis: Long,
-            elapsedRealtimeMillis: Long,
         ): RemoteViews {
             val views = RemoteViews(context.packageName, R.layout.widget_counter)
 
@@ -170,16 +168,17 @@ class CounterWidgetProvider : AppWidgetProvider() {
             }
 
             val breakdown = elapsedBreakdown(counter.startEpochMillis, nowMillis)
+            val zone = elapsedClockZoneId(counter.startEpochMillis)
 
             views.setTextViewText(R.id.widget_title, counter.title)
             views.setTextViewText(R.id.widget_days, breakdown.days.toString().padStart(2, '0') + ":")
-            views.setTextViewText(R.id.widget_hours, breakdown.hours.toString().padStart(2, '0') + ":")
-            views.setChronometer(
-                R.id.widget_chronometer,
-                minuteChronometerBase(counter.startEpochMillis, nowMillis, elapsedRealtimeMillis),
-                null,
-                true,
-            )
+            // The clocks' own tickers render HH: and mm:ss; they wrap instead of overflowing.
+            views.setString(R.id.widget_hours, "setTimeZone", zone)
+            views.setCharSequence(R.id.widget_hours, "setFormat12Hour", "HH:")
+            views.setCharSequence(R.id.widget_hours, "setFormat24Hour", "HH:")
+            views.setString(R.id.widget_clock, "setTimeZone", zone)
+            views.setCharSequence(R.id.widget_clock, "setFormat12Hour", "mm:ss")
+            views.setCharSequence(R.id.widget_clock, "setFormat24Hour", "mm:ss")
             views.setViewVisibility(R.id.widget_content, View.VISIBLE)
             views.setViewVisibility(R.id.widget_hint, View.GONE)
             return views

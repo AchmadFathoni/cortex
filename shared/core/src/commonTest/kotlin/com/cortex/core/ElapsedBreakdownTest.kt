@@ -51,19 +51,41 @@ class ElapsedBreakdownTest {
     }
 
     @Test
-    fun minuteChronometerBaseUsesElapsedRealtime() {
+    fun elapsedClockZoneIsOffsetFromStart() {
+        // start at 20:26 -> clock must read 00:00 when elapsed is 0 -> GMT+03:34
+        val start = 20 * HOUR_MILLIS + 26 * 60_000L
+        assertEquals("GMT+03:34", elapsedClockZoneId(start))
+    }
+
+    @Test
+    fun elapsedClockZoneWrapsAtDay() {
+        assertEquals("GMT+00:00", elapsedClockZoneId(0L))
+        assertEquals("GMT+00:01", elapsedClockZoneId(DAY_MILLIS - 60_000L))
+        assertEquals("GMT+23:01", elapsedClockZoneId(59 * 60_000L))
         assertEquals(
-            95_000L,
-            minuteChronometerBase(startMillis = 0L, nowMillis = 5_000L, elapsedRealtimeMillis = 100_000L),
+            "GMT+03:34",
+            elapsedClockZoneId(5 * DAY_MILLIS + 20 * HOUR_MILLIS + 26 * 60_000L),
         )
     }
 
     @Test
-    fun minuteChronometerBaseDropsWholeHours() {
-        val now = 2 * HOUR_MILLIS + 5 * 60_000L + 7_000L
+    fun nextHourBoundaryIsElapsedNotWallClock() {
+        // Start at :37 past the hour; the digits change at :37, not at the top of the hour.
+        val start = 37 * 60_000L
         assertEquals(
-            100_000L - (5 * 60_000L + 7_000L),
-            minuteChronometerBase(startMillis = 0L, nowMillis = now, elapsedRealtimeMillis = 100_000L),
+            start + HOUR_MILLIS,
+            nextHourBoundaryAt(startMillis = start, nowMillis = start + 5 * 60_000L),
         )
+    }
+
+    @Test
+    fun nextHourBoundarySkipsCurrentBoundary() {
+        assertEquals(2 * HOUR_MILLIS, nextHourBoundaryAt(startMillis = 0L, nowMillis = HOUR_MILLIS))
+        assertEquals(3 * HOUR_MILLIS, nextHourBoundaryAt(0L, 2 * HOUR_MILLIS + 1))
+    }
+
+    @Test
+    fun nextHourBoundaryWhenClockRolledBack() {
+        assertEquals(10_000L + HOUR_MILLIS, nextHourBoundaryAt(startMillis = 10_000L, nowMillis = 5_000L))
     }
 }

@@ -33,11 +33,18 @@ fun elapsedBreakdown(startMillis: Long, nowMillis: Long): ElapsedBreakdown {
     return ElapsedBreakdown(days, hours, minutes, seconds, milliseconds)
 }
 
-fun minuteChronometerBase(
-    startMillis: Long,
-    nowMillis: Long,
-    elapsedRealtimeMillis: Long,
-): Long {
-    val remainder = elapsedMillis(startMillis, nowMillis) % HOUR_MILLIS
-    return elapsedRealtimeMillis - remainder
+/**
+ * Fixed GMT zone whose clock reads elapsed time mod 24 hours.
+ * TextClock has minute-granularity zones, so the start must be minute-aligned (the picker is).
+ */
+fun elapsedClockZoneId(startMillis: Long): String {
+    val offsetMinutes = (DAY_MILLIS - startMillis % DAY_MILLIS) % DAY_MILLIS / 60_000L
+    return "GMT+" +
+        (offsetMinutes / 60).toString().padStart(2, '0') +
+        ":" +
+        (offsetMinutes % 60).toString().padStart(2, '0')
 }
+
+/** Wall-clock time of the next elapsed-hour boundary, when the displayed days/hours change. */
+fun nextHourBoundaryAt(startMillis: Long, nowMillis: Long): Long =
+    startMillis + (elapsedMillis(startMillis, nowMillis) / HOUR_MILLIS + 1) * HOUR_MILLIS

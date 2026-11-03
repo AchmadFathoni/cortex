@@ -101,10 +101,10 @@ broadcast `PendingIntent` templates unreliable; raw views with an activity
 - One counter means a simple layout: title, a single-line `DD:HH:MM:SS`
   display with `DAY HOUR MINUTE SECOND` labels above it, and no
   `RemoteViewsService`/`ListView` unless multiple counters are requested.
-  Days and hours are separate `TextView`s ending in `:`; the `Chronometer`
-  renders `MM:SS` immediately after them. Each segment has its own label row
-  directly above it so labels align with the digits. Target a compact 4x1
-  widget; keep it resizable.
+  `Days` is a `TextView` ending in `:`; the hour and minute:second columns are
+  `TextClock`s with formats `HH:` and `mm:ss` (see below). Each segment has its
+  own label row directly above it so labels align with the digits. Target a
+  compact 4x1 widget; keep it resizable.
 - The widget can use a user-selected background image. Copy the picked image
   into app-private storage, decode it to a small bitmap (<=320 px on the long
   edge), and pass it with `setImageViewBitmap`. Do not pass a `content://` URI
@@ -118,23 +118,27 @@ broadcast `PendingIntent` templates unreliable; raw views with an activity
   `updatePeriodMillis` has a 30-minute minimum; rapid `updateAppWidget` loops
   are throttled and battery-hostile. Do not use a foreground service to animate
   the widget.
-- `Chronometer` provides the per-second movement for `MM:SS`. Its base uses
-  the `SystemClock.elapsedRealtime()` timebase, not epoch millis:
-
-  ```text
-  base = SystemClock.elapsedRealtime() - (wallClockNow - startMillis) % 3_600_000
-  ```
-
-  Render whole days and hours as separate text ending in `:`, then `MM:SS`
-  from the chronometer. Recompute the base on widget update, reboot, clock
-  change, timezone change, and app edit.
-- Schedule the next hour boundary with an exact alarm and fall back to an
+- **`Chronometer` limitation (do not use it for the widget clock):** its text
+  comes from `DateUtils.formatElapsedTime`, which renders `H:MM:SS` once the
+  base is an hour old, and `setFormat` only wraps that string — the extra
+  segment cannot be configured away. At an hour/day boundary the launcher keeps
+  drawing the previous `RemoteViews` until our update lands (~0.1–2 s, longer
+  on a cold process), so a `Chronometer` momentarily shows a fifth segment such
+  as `03:23:1:00:02`. Use `TextClock` in the fixed zone
+  `elapsedClockZoneId(start)` (`GMT+HH:MM`, the offset is `(-start) mod 24 h`)
+  with formats `HH:` and `mm:ss` instead: those are elapsed fields that wrap by
+  themselves and can never grow a third field. Set the zone and both 12/24-hour
+  formats on every update; the platform ticker runs while the widget is
+  visible. Only the `Days` digit is refreshed by the alarm.
+- Schedule the next **elapsed-hour** boundary (`start + N hours`, not the next
+  wall-clock hour) with an exact alarm and fall back to an
   inexact **allow-while-idle** alarm when exact-alarm permission is denied.
-  That fallback is the normal path: `SCHEDULE_EXACT_ALARM` is denied by default
-  for targetSdk 33+, so a plain `set()` alarm is never delivered in Doze and the
-  widget sits on yesterday's day/hour digits all night. Allow-while-idle is at
-  worst ~40 min late. The hourly refresh also catches midnight and keeps the
-  chronometer format correct. Reschedule on boot.
+  Declare `USE_EXACT_ALARM` (granted automatically on minSdk 35+), not just
+  `SCHEDULE_EXACT_ALARM`, which is denied by default for targetSdk 33+: without
+  it the alarm lands ~30 s to ~40 min late, so the `Days` digit stays stale
+  (the clocks still tick correctly). A plain `set()` alarm is never delivered
+  in Doze and the widget sits on yesterday's day digit all night. Reschedule on
+  boot.
 - Refresh the widget when the counter is created, reset, or edited.
 - Keep widget fonts/layout static; custom bundled fonts are supported on
   minSdk 35, but avoid downloadable fonts.

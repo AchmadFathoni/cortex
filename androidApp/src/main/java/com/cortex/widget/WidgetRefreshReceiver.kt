@@ -5,7 +5,8 @@ import android.app.PendingIntent
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import java.util.Calendar
+import com.cortex.core.nextHourBoundaryAt
+import com.cortex.core.nowMillis
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -15,8 +16,8 @@ class WidgetRefreshReceiver : BroadcastReceiver() {
         val pendingResult = goAsync()
         CoroutineScope(Dispatchers.IO).launch {
             try {
+                // A successful refresh reschedules the next alarm.
                 CounterWidgetProvider.refreshNow(context.applicationContext)
-                scheduleNext(context.applicationContext)
             } finally {
                 pendingResult.finish()
             }
@@ -24,7 +25,7 @@ class WidgetRefreshReceiver : BroadcastReceiver() {
     }
 
     companion object {
-        fun scheduleNext(context: Context) {
+        fun scheduleNext(context: Context, startMillis: Long) {
             val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
             val intent = Intent(context, WidgetRefreshReceiver::class.java)
             val pending = PendingIntent.getBroadcast(
@@ -34,22 +35,17 @@ class WidgetRefreshReceiver : BroadcastReceiver() {
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
             )
 
-            val nextHour = Calendar.getInstance().apply {
-                add(Calendar.HOUR_OF_DAY, 1)
-                set(Calendar.MINUTE, 0)
-                set(Calendar.SECOND, 0)
-                set(Calendar.MILLISECOND, 0)
-            }.timeInMillis
+            val triggerAt = nextHourBoundaryAt(startMillis, nowMillis())
 
             try {
                 alarmManager.setExactAndAllowWhileIdle(
                     AlarmManager.RTC_WAKEUP,
-                    nextHour,
+                    triggerAt,
                     pending,
                 )
             } catch (_: SecurityException) {
                 // set() never fires in Doze; allow-while-idle keeps the hourly rollover close.
-                alarmManager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, nextHour, pending)
+                alarmManager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAt, pending)
             }
         }
     }
