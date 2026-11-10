@@ -2,6 +2,7 @@ package com.cortex.core
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 class ElapsedBreakdownTest {
     @Test
@@ -61,11 +62,23 @@ class ElapsedBreakdownTest {
     fun elapsedClockZoneWrapsAtDay() {
         assertEquals("GMT+00:00", elapsedClockZoneId(0L))
         assertEquals("GMT+00:01", elapsedClockZoneId(DAY_MILLIS - 60_000L))
-        assertEquals("GMT+23:01", elapsedClockZoneId(59 * 60_000L))
+        assertEquals("GMT-00:59", elapsedClockZoneId(59 * 60_000L))
         assertEquals(
             "GMT+03:34",
             elapsedClockZoneId(5 * DAY_MILLIS + 20 * HOUR_MILLIS + 26 * 60_000L),
         )
+    }
+
+    @Test
+    fun elapsedClockZoneStaysWithinTextClockOffsetLimit() {
+        // TextClock rejects java.time offsets beyond +/-18:00 and shows the device time.
+        var minute = 0L
+        while (minute < DAY_MILLIS / 60_000L) {
+            val zone = elapsedClockZoneId(minute * 60_000L)
+            val offset = zone.removePrefix("GMT").replace(":", "").toLong()
+            assertTrue(offset in -1800..1800, "offset out of range: $zone")
+            minute++
+        }
     }
 
     @Test

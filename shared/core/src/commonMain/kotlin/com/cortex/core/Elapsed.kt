@@ -38,11 +38,16 @@ fun elapsedBreakdown(startMillis: Long, nowMillis: Long): ElapsedBreakdown {
  * TextClock has minute-granularity zones, so the start must be minute-aligned (the picker is).
  */
 fun elapsedClockZoneId(startMillis: Long): String {
-    val offsetMinutes = (DAY_MILLIS - startMillis % DAY_MILLIS) % DAY_MILLIS / 60_000L
-    return "GMT+" +
-        (offsetMinutes / 60).toString().padStart(2, '0') +
+    var offsetMinutes = (DAY_MILLIS - startMillis % DAY_MILLIS) % DAY_MILLIS / 60_000L
+    // TextClock validates the zone with java.time, which rejects offsets past +/-18h
+    // and falls back to the device zone. Use the negative equivalent; it reads the same.
+    if (offsetMinutes > 18 * 60) offsetMinutes -= DAY_MILLIS / 60_000L
+    val sign = if (offsetMinutes < 0) "-" else "+"
+    val abs = kotlin.math.abs(offsetMinutes)
+    return "GMT$sign" +
+        (abs / 60).toString().padStart(2, '0') +
         ":" +
-        (offsetMinutes % 60).toString().padStart(2, '0')
+        (abs % 60).toString().padStart(2, '0')
 }
 
 /** Wall-clock time of the next elapsed-hour boundary, when the displayed days/hours change. */

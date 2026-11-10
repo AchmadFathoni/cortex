@@ -125,7 +125,9 @@ broadcast `PendingIntent` templates unreliable; raw views with an activity
   drawing the previous `RemoteViews` until our update lands (~0.1–2 s, longer
   on a cold process), so a `Chronometer` momentarily shows a fifth segment such
   as `03:23:1:00:02`. Use `TextClock` in the fixed zone
-  `elapsedClockZoneId(start)` (`GMT+HH:MM`, the offset is `(-start) mod 24 h`)
+  `elapsedClockZoneId(start)` (`GMT±HH:MM`, the offset is `(-start) mod 24 h`,
+  kept within ±18 h because `TextClock` rejects larger `java.time` offsets and
+  silently falls back to the device's time zone)
   with formats `HH:` and `mm:ss` instead: those are elapsed fields that wrap by
   themselves and can never grow a third field. Set the zone and both 12/24-hour
   formats on every update; the platform ticker runs while the widget is
